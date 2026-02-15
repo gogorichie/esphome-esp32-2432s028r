@@ -1,0 +1,32 @@
+name: Release on PR merge
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out merged commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+
+      - name: Create archive artifact
+        run: git archive --format=zip -o release-artifact.zip HEAD
+
+      - name: Create GitHub release
+        uses: ncipollo/release-action@v1
+        with:
+          tag: pr-${{ github.event.pull_request.number }}-${{ github.run_number }}
+          name: "PR #${{ github.event.pull_request.number }} - ${{ github.event.pull_request.title }}"
+          generateReleaseNotes: true
+          artifacts: release-artifact.zip
